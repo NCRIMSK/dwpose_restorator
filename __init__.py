@@ -1,10 +1,13 @@
-import os
-import server
-from aiohttp import web
-import folder_paths
+import sys, os
+import server # pyright: ignore[reportMissingImports]
+from aiohttp import web # pyright: ignore[reportMissingImports]
+import folder_paths # pyright: ignore[reportMissingImports]
 import nodes
+import numpy as np # pyright: ignore[reportMissingImports]
+import copy
+from .nodes import DwRestorator
 
-NODE_CLASS_MAPPINGS = {}
+NODE_CLASS_MAPPINGS = { "DWPoseRestorator" : DwRestorator }
 __all__ = ["NODE_CLASS_MAPPINGS"]
 
 # Define the path to our extension
@@ -40,7 +43,7 @@ if os.path.exists(dist_path):
 
     try:
         # Method added in https://github.com/comfyanonymous/ComfyUI/pull/8357
-        from comfy_config import config_parser
+        from comfy_config import config_parser # type: ignore
 
         project_config = config_parser.extract_node_configuration(workspace_path)
         project_name = project_config.project.name
