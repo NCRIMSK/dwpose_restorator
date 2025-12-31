@@ -168,8 +168,9 @@ class DwRestorator:
                     # Convert numpy array to torch tensor format (normalize to 0-1)
                     image_tensor = canvas.astype(np.float32) / 255.0
                     image_tensor = np.expand_dims(image_tensor, axis=0)  # Add batch dimension
+                    image_tensor = torch.from_numpy(image_tensor).to('cpu')  # Convert to torch tensor on CPU
                     
-                    print(f"Converted to tensor: shape={image_tensor.shape}")
+                    print(f"Converted to tensor: shape={image_tensor.shape}, dtype={image_tensor.dtype}, device={image_tensor.device}")
                     print("=== Image Generation Complete ===\n")
                     return image_tensor
             
@@ -183,9 +184,10 @@ class DwRestorator:
             return self._create_blank_image()
     
     def _create_blank_image(self, width=512, height=512):
-        """Create a blank image tensor."""
+        """Create a blank image tensor in ComfyUI format (CPU)."""
         print(f"Creating blank image {width}x{height}")
-        blank = np.zeros((1, height, width, 3), dtype=np.float32)
+        # Return as torch tensor on CPU: (batch, height, width, channels) with values 0-1
+        blank = torch.zeros((1, height, width, 3), dtype=torch.float32, device='cpu')
         return blank
 
 
