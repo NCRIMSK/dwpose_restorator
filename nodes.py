@@ -4,18 +4,26 @@ import torch
 import sys
 import os
 
-# Try to import DWPose utilities
+# Try to import DWPose utilities - local first, fallback to controlnet_aux
 try:
-    from custom_controlnet_aux.dwpose import (
+    from .pose_visualization import (
         decode_json_as_poses,
         draw_poses
     )
     DWPOSE_AVAILABLE = True
-    print("[DWRestorator] DWPose utilities loaded successfully")
-except ImportError as e:
-    print(f"[DWRestorator] WARNING: DWPose utilities not found: {e}")
-    print("[DWRestorator] Will use fallback image generation")
-    DWPOSE_AVAILABLE = False
+    print("[DWRestorator] Using local pose visualization module")
+except ImportError:
+    try:
+        from custom_controlnet_aux.dwpose import ( # pyright: ignore[reportMissingImports]
+            decode_json_as_poses,
+            draw_poses
+        )
+        DWPOSE_AVAILABLE = True
+        print("[DWRestorator] Using controlnet_aux pose visualization module")
+    except ImportError as e:
+        print(f"[DWRestorator] WARNING: Pose visualization not available: {e}")
+        print("[DWRestorator] Will use fallback blank image generation")
+        DWPOSE_AVAILABLE = False
 
 
 class DwRestorator:
@@ -49,7 +57,7 @@ class DwRestorator:
         
         if ref_pose is None:
             print("ERROR: ref_pose is None, returning unchanged")
-            return (pose_keypoints,)
+            return (self._create_blank_image(), pose_keypoints)
 
         out = copy.deepcopy(pose_keypoints)
         ref = ref_pose
@@ -81,7 +89,7 @@ class DwRestorator:
             print(f"Reference person keys: {list(pref.keys())}")
         except Exception as e:
             print(f"ERROR extracting person data: {e}")
-            return (out,)
+            return (self._create_blank_image(), out)
 
         keys = ["pose_keypoints_2d", "face_keypoints_2d", "hand_left_keypoints_2d", "hand_right_keypoints_2d"]
 
