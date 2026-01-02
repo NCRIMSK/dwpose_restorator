@@ -1,0 +1,11 @@
+numpy>=1.24
+opencv-python>=4.7.0
+torch>=2.1.0
+torchvision>=0.16.0
+Pillow>=9.0.0
+
+# Notes:
+# - On Windows, installing `torch` may require selecting the proper wheel for your CUDA
+#   version. See https://pytorch.org/get-started/locally/ for recommended install commands.
+# - If you only need CPU, install the CPU-only wheel (pip will choose a CPU wheel by default
+#   if CUDA-enabled wheels are not available for your platform).

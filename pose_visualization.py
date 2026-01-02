@@ -2,7 +2,25 @@
 from typing import Tuple, List, Union, Optional
 import numpy as np
 import cv2
-from .pose_types import Keypoint, BodyResult, PoseResult
+
+try:
+    from .pose_types import Keypoint, BodyResult, PoseResult
+except ImportError:
+    # Fallback: define minimal type stubs if pose_types not available
+    class Keypoint:
+        def __init__(self, x, y, c):
+            self.x, self.y, self.confidence = x, y, c
+    
+    class BodyResult:
+        def __init__(self, keypoints=None):
+            self.keypoints = keypoints or []
+    
+    class PoseResult:
+        def __init__(self, body=None, left_hand=None, right_hand=None, face=None):
+            self.body = body or BodyResult()
+            self.left_hand = left_hand
+            self.right_hand = right_hand
+            self.face = face
 
 
 def decode_json_as_poses(pose_json: dict) -> Tuple[List[PoseResult], List, int, int]:
