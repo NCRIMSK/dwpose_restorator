@@ -4,6 +4,7 @@ import torch
 import sys
 import os
 import cv2
+import json
 
 # Try to import DWPose utilities - local first, fallback to controlnet_aux
 try:
@@ -74,6 +75,20 @@ HAND_HIERARCHY = {
 # Face hierarchy - use local regions with face center as anchor
 # Simplified: group landmarks by facial regions
 FACE_CENTER_IDX = 33  # Nose tip as center (approximate)
+
+
+def convert_to_python_types(obj):
+    """Recursively convert numpy/torch types to native Python types for JSON serialization."""
+    if isinstance(obj, (np.ndarray, torch.Tensor)):
+        obj = obj.tolist() if hasattr(obj, 'tolist') else float(obj)
+    
+    if isinstance(obj, (np.integer, np.floating)):
+        return float(obj) if isinstance(obj, np.floating) else int(obj)
+    elif isinstance(obj, dict):
+        return {k: convert_to_python_types(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [convert_to_python_types(item) for item in obj]
+    return obj
 
 
 class DwRestorator:
@@ -231,13 +246,13 @@ class DwRestorator:
                         offset_transformed = (offset_x, offset_y)
                     
                     # Apply to current parent position
-                    x_restored = x_parent_cur + offset_transformed[0]
-                    y_restored = y_parent_cur + offset_transformed[1]
+                    x_restored = float(x_parent_cur + offset_transformed[0])
+                    y_restored = float(y_parent_cur + offset_transformed[1])
                     
                     # Use parent's confidence or reference's confidence, then optionally reduce
-                    c_restored = min(c_parent_cur, c_child_ref)
+                    c_restored = float(min(c_parent_cur, c_child_ref))
                     if reduce_confidence:
-                        c_restored = c_restored * confidence_factor
+                        c_restored = float(c_restored * confidence_factor)
                     
                     restored[child_idx] = [x_restored, y_restored, c_restored]
                     print(f"  Restored keypoint {child_idx} from parent {parent_idx}: ({x_restored:.2f}, {y_restored:.2f}, {c_restored:.3f})")
@@ -303,10 +318,10 @@ class DwRestorator:
                 reduce_confidence, confidence_reduction_factor
             )
             
-            # Convert back to flat list
+            # Convert back to flat list with native Python floats
             pose_in_new = []
             for x, y, c in restored_body:
-                pose_in_new.extend([x, y, c])
+                pose_in_new.extend([float(x), float(y), float(c)])
             pin["pose_keypoints_2d"] = pose_in_new
 
         # Restore left hand keypoints
@@ -327,7 +342,7 @@ class DwRestorator:
             
             hand_left_in_new = []
             for x, y, c in restored_hand:
-                hand_left_in_new.extend([x, y, c])
+                hand_left_in_new.extend([float(x), float(y), float(c)])
             pin["hand_left_keypoints_2d"] = hand_left_in_new
 
         # Restore right hand keypoints
@@ -348,7 +363,7 @@ class DwRestorator:
             
             hand_right_in_new = []
             for x, y, c in restored_hand:
-                hand_right_in_new.extend([x, y, c])
+                hand_right_in_new.extend([float(x), float(y), float(c)])
             pin["hand_right_keypoints_2d"] = hand_right_in_new
 
         # Restore face keypoints (simplified local hierarchy)
@@ -369,7 +384,7 @@ class DwRestorator:
             
             face_in_new = []
             for x, y, c in restored_face:
-                face_in_new.extend([x, y, c])
+                face_in_new.extend([float(x), float(y), float(c)])
             pin["face_keypoints_2d"] = face_in_new
 
         print(f"=== Restoration complete ===\n")
@@ -378,6 +393,9 @@ class DwRestorator:
         out_for_export = copy.deepcopy(out)
         canvas_h, canvas_w = self._get_canvas_dims(out_for_export)
         self._zero_out_of_canvas(out_for_export, canvas_h, canvas_w)
+        
+        # Convert all numeric types to native Python types for JSON serialization
+        out_for_export = convert_to_python_types(out_for_export)
 
         # Generate image output (visualization uses zeroed copy internally)
         image_output = self._generate_pose_image(out, use_gpu=use_gpu)
@@ -451,11 +469,11 @@ class DwRestorator:
                             else:
                                 offset_transformed = (offset_x, offset_y)
                             
-                            x_restored = x_anchor + offset_transformed[0]
-                            y_restored = y_anchor + offset_transformed[1]
-                            c_restored = c_ref
+                            x_restored = float(x_anchor + offset_transformed[0])
+                            y_restored = float(y_anchor + offset_transformed[1])
+                            c_restored = float(c_ref)
                             if reduce_confidence:
-                                c_restored = c_restored * confidence_factor
+                                c_restored = float(c_restored * confidence_factor)
                             
                             restored[i] = [x_restored, y_restored, c_restored]
                             print(f"  Restored face keypoint {i} from anchor {closest_idx}: ({x_restored:.2f}, {y_restored:.2f}, {c_restored:.3f})")
